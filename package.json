@@ -1,0 +1,19 @@
+{
+  "name": "talat-hhs-iphone-proef",
+  "version": "1.1.0",
+  "description": "Afzonderlijke, privacyveilige iPhone bouwproef voor Talat HHS",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "web:controle": "node --check www/app.js",
+    "ios:add": "cap add ios",
+    "ios:sync": "cap sync ios"
+  },
+  "dependencies": {
+    "@capacitor/core": "^8.0.0",
+    "@capacitor/ios": "^8.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.0.0"
+  }
+}

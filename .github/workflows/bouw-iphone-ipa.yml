@@ -1,0 +1,71 @@
+name: Bouw iPhone proef-IPA (unsigned)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ios-proef:
+    name: Compileer met Xcode zonder Apple-ondertekening
+    runs-on: macos-26
+    timeout-minutes: 45
+    steps:
+      - name: Haal de openbare proefbroncode op
+        uses: actions/checkout@v4
+
+      - name: Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Controleer JavaScript
+        run: node --check www/app.js
+
+      - name: Installeer Capacitor 8
+        run: npm install --no-fund --no-audit
+
+      - name: Maak een iOS-project met Swift Package Manager
+        run: |
+          npx cap add ios
+          npx cap sync ios
+
+      - name: Controleer Xcode
+        run: |
+          xcodebuild -version
+          ls -la ios/App
+
+      - name: Bouw app voor fysieke iPhone ZONDER ondertekening
+        run: |
+          set -euo pipefail
+          xcodebuild \
+            -project ios/App/App.xcodeproj \
+            -scheme App \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath "$GITHUB_WORKSPACE/build/ios" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY='' \
+            build
+
+      - name: Pak ongetekende IPA in voor Sideloadly
+        run: |
+          set -euo pipefail
+          APP="$GITHUB_WORKSPACE/build/ios/Build/Products/Release-iphoneos/App.app"
+          test -d "$APP"
+          mkdir -p "$RUNNER_TEMP/iphone-payload/Payload"
+          cp -R "$APP" "$RUNNER_TEMP/iphone-payload/Payload/App.app"
+          cd "$RUNNER_TEMP/iphone-payload"
+          /usr/bin/zip -qr "$GITHUB_WORKSPACE/Talat-HHS-iPhone-Proef-UNSIGNED.ipa" Payload
+          test -s "$GITHUB_WORKSPACE/Talat-HHS-iPhone-Proef-UNSIGNED.ipa"
+
+      - name: Bied IPA aan als download
+        uses: actions/upload-artifact@v4
+        with:
+          name: Talat-HHS-iPhone-Proef-IPA
+          path: Talat-HHS-iPhone-Proef-UNSIGNED.ipa
+          if-no-files-found: error
+          retention-days: 3

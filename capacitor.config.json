@@ -1,0 +1,6 @@
+{
+  "appId": "com.talathhs.iphoneproef",
+  "appName": "Talat HHS Proef",
+  "webDir": "www",
+  "server": { "androidScheme": "https" }
+}

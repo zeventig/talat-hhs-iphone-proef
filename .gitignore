@@ -1,0 +1,17 @@
+node_modules/
+ios/
+android/
+build/
+.DS_Store
+Thumbs.db
+*.ipa
+*.sqlite
+*.sqlite3
+*.db
+*.json.bak
+*.zip
+*.log
+.env
+.env.*
+!*.example
+.vscode/
