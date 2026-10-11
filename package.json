@@ -1,7 +1,7 @@
 {
   "name": "talat-hhs-iphone-proef",
-  "version": "3.0.0",
-  "description": "Talat HHS iPhone v3.0: offline studieoverzicht en proefsync",
+  "version": "4.0.0",
+  "description": "Talat HHS iPhone v4.0: encrypted Wi-Fi messages, offline planning and search",
   "private": true,
   "type": "module",
   "scripts": {

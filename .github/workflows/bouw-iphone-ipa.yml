@@ -1,4 +1,4 @@
-name: Bouw Talat HHS iPhone v3.0 (unsigned)
+name: Bouw Talat HHS iPhone v4.0 (unsigned)
 
 on:
   workflow_dispatch:
@@ -71,13 +71,13 @@ jobs:
           mkdir -p "$RUNNER_TEMP/iphone-payload/Payload"
           cp -R "$APP" "$RUNNER_TEMP/iphone-payload/Payload/App.app"
           cd "$RUNNER_TEMP/iphone-payload"
-          /usr/bin/zip -qr "$GITHUB_WORKSPACE/Talat-HHS-iPhone-v3-UNSIGNED.ipa" Payload
-          test -s "$GITHUB_WORKSPACE/Talat-HHS-iPhone-v3-UNSIGNED.ipa"
+          /usr/bin/zip -qr "$GITHUB_WORKSPACE/Talat-HHS-iPhone-v4-UNSIGNED.ipa" Payload
+          test -s "$GITHUB_WORKSPACE/Talat-HHS-iPhone-v4-UNSIGNED.ipa"
 
       - name: Bied IPA aan als download
         uses: actions/upload-artifact@v4
         with:
-          name: Talat-HHS-iPhone-v3-IPA
-          path: Talat-HHS-iPhone-v3-UNSIGNED.ipa
+          name: Talat-HHS-iPhone-v4-IPA
+          path: Talat-HHS-iPhone-v4-UNSIGNED.ipa
           if-no-files-found: error
           retention-days: 3

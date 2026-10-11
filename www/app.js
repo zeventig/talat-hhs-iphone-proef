@@ -1,13 +1,18 @@
 "use strict";
-// Talat HHS v3.0 mobiele pilot: taken, cursussen, planning, offline lokale concepten,
-// en optionele handmatig gestarte lokale Wi-Fi-synchronisatie met Windows.
+// Talat HHS v4.0: offline studieoverzicht, zoeken en versleutelde wifi-berichten.
+// De sleutel blijft alleen in het geheugen van de huidige app-sessie.
 const KEY='talat-hhs.mobile.v3';
 const demoCourses=[{id:'programming1',title:'Programming 1',block:'TECH1',status:'actief'},{id:'bpm',title:'Business Process Management',block:'BUS1',status:'actief'},{id:'challenge',title:'The Challenge & PD',block:'CHAL1',status:'actief'},{id:'programming2',title:'Programming 2',block:'ONBEKEND',status:'komend'}];
 const demoTasks=[{id:'demo-java',title:'DEMO — Java-oefening (geen echte schooltaak)',courseId:'programming1',workStatus:'open',submission:'onbekend',due:'',updatedAt:'demo'},{id:'demo-bpm',title:'DEMO — BPM controleren (geen echte schooltaak)',courseId:'bpm',workStatus:'open',submission:'onbekend',due:'',updatedAt:'demo'}];
-const initial={tab:'today',endpoint:'',token:'',courses:demoCourses,tasks:demoTasks,events:[],synced:false,changed:{},localTasks:[],syncMessage:'Nog niet gekoppeld aan Windows.',lastSync:''};
+const initial={tab:'today',courseFilter:'',endpoint:'',courses:demoCourses,tasks:demoTasks,events:[],synced:false,changed:{},localTasks:[],syncMessage:'Nog niet gekoppeld aan Windows.',lastSync:''};
 let state;
 try {state={...initial,...JSON.parse(localStorage.getItem(KEY)||'{}')};}catch{state={...initial};}
-function save(){localStorage.setItem(KEY,JSON.stringify(state));}
+// Scrub the v3.0 persisted bearer token; never store the v4.0 session key.
+delete state.token;
+if(!['today','courses','planning','search','sync'].includes(state.tab))state.tab='today';
+let sessionSecret='';
+function save(){const safe={...state};delete safe.token;localStorage.setItem(KEY,JSON.stringify(safe));}
+save();
 function esc(s){return String(s??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
 function courseTitle(id){return state.courses.find(c=>c.id===id)?.title||'Algemeen';}
 function label(status){return {open:'Te doen',bezig:'Bezig',afgerond:'Afgerond',onbekend:'Nog controleren'}[status]||status;}
@@ -15,29 +20,42 @@ function shownTask(t){return {...t,workStatus:state.changed[t.id]?.newStatus||t.
 function allTasks(){return [...state.tasks,...state.localTasks].map(shownTask);}
 function due(s){if(!s)return 'Geen bevestigde datum'; const d=new Date(s);return isNaN(d)?'Datum onbekend':d.toLocaleDateString('nl-NL',{day:'numeric',month:'short',year:'numeric'});}
 function badge(t){let c=state.changed[t.id];if(c)return `<span class="status ${c.status==='conflict'?'failed':'pending'}">${c.status==='conflict'?'Conflict':c.status==='queued'?'Wacht op Windows':'Offline wijziging'}</span>`;if(t.id.startsWith('local-'))return '<span class="status">Alleen iPhone</span>';if(t.workStatus==='afgerond')return '<span class="status done">Afgerond</span>';return '';}
-function taskHtml(task){const t=shownTask(task);return `<button class="task ${t.workStatus==='afgerond'?'done':''}" data-task="${esc(t.id)}" ${state.changed[t.id]?.status==='queued'?'disabled':''}><span class="tick">${t.workStatus==='afgerond'?'✓':''}</span><span class="task-text"><span class="task-label">${esc(t.title)}</span><span class="task-sub">${esc(courseTitle(t.courseId))} · ${esc(due(t.due))}</span>${badge(t)}</span><span class="task-side">›</span></button>`;}
+function taskHtml(task){const t=shownTask(task);return `<button class="task ${t.workStatus==='afgerond'?'done':''}" data-task="${esc(t.id)}" ${state.changed[t.id]?.status==='queued'?'disabled':''}><span class="tick">${t.workStatus==='afgerond'?'✓':''}</span><span class="task-text"><span class="task-label">${esc(t.title)}</span><span class="task-sub">${esc(courseTitle(t.courseId))} · ${esc(due(t.due))}${t.priority==='hoog'?' · Hoge prioriteit':''}</span>${badge(t)}</span><span class="task-side">›</span></button>`;}
 function taskPanel(title,tasks){return `<h2 class="section">${esc(title)} (${tasks.length})</h2>${tasks.map(taskHtml).join('')||'<p class="muted">Geen taken gevonden.</p>'}`;}
+function sortTasks(ts){return [...ts].sort((a,b)=>(a.due||'9999').localeCompare(b.due||'9999')||(a.priority==='hoog'?-1:0)-(b.priority==='hoog'?-1:0));}
+function activeFilterLabel(){return state.courseFilter?courseTitle(state.courseFilter):'Alle vakken';}
 function render(){
   const tab=state.tab;
-  document.getElementById('screen-title').textContent=({today:'Vandaag',courses:'Mijn vakken',planning:'Planning',sync:'Synchroniseren'})[tab];
+  document.getElementById('screen-title').textContent=({today:'Vandaag',courses:'Mijn vakken',planning:'Planning',search:'Zoeken',sync:'Synchroniseren'})[tab];
   document.getElementById('connection-indicator').textContent=state.synced?`Lokaal opgeslagen · laatste verbinding: ${state.lastSync||'onbekend'}`:'Voorbeeldgegevens · niet gekoppeld aan Windows';
   document.querySelectorAll('.tab').forEach(b=>{b.classList.toggle('active',b.dataset.tab===tab);b.setAttribute('aria-current',b.dataset.tab===tab?'page':'false');});
   const root=document.getElementById('screen');
   if(tab==='today'){
-    const tasks=allTasks();const active=tasks.filter(t=>t.workStatus!=='afgerond');
-    root.innerHTML=`<section class="hero"><span class="eyebrow">STUDIEOVERZICHT</span><h2>${state.synced?'Je echte Windows-taken':'Proefmodus'}</h2><p>${state.synced?'Vink een taak af. De wijziging wordt lokaal bewaard en bij wifi-sync naar Windows gestuurd.':'Koppel je Windows-app onder Sync. De huidige taken zijn fictieve voorbeelden.'}</p></section><div class="stats"><div class="stat"><span class="big">${active.length}</span><span class="sub">Niet afgerond</span></div><div class="stat"><span class="big">${tasks.filter(t=>t.workStatus==='afgerond').length}</span><span class="sub">Afgerond werk</span></div></div>${taskPanel('Mijn taken',active)}<section class="panel"><h2 class="panel-title">Snel een persoonlijke taak</h2><p class="panel-detail">Nieuwe taken zijn voorlopig alleen op deze iPhone opgeslagen, niet op Windows of Brightspace.</p><form id="quick-form" class="quickadd"><input id="quick-title" maxlength="120" autocomplete="off" placeholder="Nieuwe persoonlijke taak" required/><button aria-label="Taak toevoegen">+</button></form></section>`;
+    const tasks=allTasks().filter(t=>!state.courseFilter||t.courseId===state.courseFilter);const active=sortTasks(tasks.filter(t=>t.workStatus!=='afgerond'));
+    root.innerHTML=`<section class="hero"><span class="eyebrow">STUDIEOVERZICHT</span><h2>${state.synced?'Je echte Windows-taken':'Proefmodus'}</h2><p>${state.synced?'Vink een taak af. De wijziging wordt lokaal bewaard en bij wifi-sync naar Windows gestuurd.':'Koppel je Windows-app onder Sync. De huidige taken zijn fictieve voorbeelden.'}</p></section><div class="stats"><div class="stat"><span class="big">${active.length}</span><span class="sub">Niet afgerond</span></div><div class="stat"><span class="big">${tasks.filter(t=>t.workStatus==='afgerond').length}</span><span class="sub">Afgerond werk</span></div></div><div class="filter-line"><span>${esc(activeFilterLabel())}</span>${state.courseFilter?'<button type="button" id="clear-filter">Alle vakken tonen</button>':''}</div>${taskPanel('Mijn taken',active)}<section class="panel"><h2 class="panel-title">Snel een persoonlijke taak</h2><p class="panel-detail">Nieuwe taken zijn voorlopig alleen op deze iPhone opgeslagen, niet op Windows of Brightspace.</p><form id="quick-form" class="quickadd"><input id="quick-title" maxlength="120" autocomplete="off" placeholder="Nieuwe persoonlijke taak" required/><button aria-label="Taak toevoegen">+</button></form></section>`;
   }else if(tab==='courses'){
-    root.innerHTML=`<p class="muted">TECH1/2 · BUS1/2 · CHAL1/2. Vakken uit Windows zodra je synchroniseert.</p>${['TECH1','BUS1','CHAL1','TECH2','BUS2','CHAL2','ONBEKEND'].map(block=>{const cs=state.courses.filter(c=>c.block===block);return cs.length?`<h2 class="group-title">${block}</h2>${cs.map(c=>`<div class="course"><div>${esc(c.title)}<br><small>${c.status==='komend'?'Komend':'Actief / schoolbron controleren'}</small></div><span class="chip">${allTasks().filter(t=>t.courseId===c.id&&t.workStatus!=='afgerond').length} taken</span></div>`).join('')}`:'';}).join('')}`;
+    root.innerHTML=`<p class="muted">TECH1/2 · BUS1/2 · CHAL1/2. Vakken uit Windows zodra je synchroniseert.</p>${['TECH1','BUS1','CHAL1','TECH2','BUS2','CHAL2','ONBEKEND'].map(block=>{const cs=state.courses.filter(c=>c.block===block);return cs.length?`<h2 class="group-title">${block}</h2>${cs.map(c=>`<button class="course course-link" data-course="${esc(c.id)}"><span>${esc(c.title)}<br><small>${c.status==='komend'?'Komend':'Actief / schoolbron controleren'}</small></span><span class="chip">${allTasks().filter(t=>t.courseId===c.id&&t.workStatus!=='afgerond').length} taken ›</span></button>`).join('')}`:'';}).join('')}`;
   }else if(tab==='planning'){
     const events=[...state.events].sort((a,b)=>(a.date||'').localeCompare(b.date||''));
-    root.innerHTML=`<p class="muted">Toetsen en afspraken zoals ze lokaal uit Windows zijn overgenomen. Controleer officiële roosterwijzigingen bij de school.</p><h2 class="section">Toetsen en afspraken (${events.length})</h2>${events.map(e=>`<div class="panel"><div class="row"><div><strong>${esc(e.title)}</strong><p class="panel-detail">${esc(courseTitle(e.courseId))}</p></div><span class="chip">${esc(due(e.date))}</span></div></div>`).join('')||'<p class="muted">Nog geen afspraken ontvangen.</p>'}`;
+    const now=new Date();now.setHours(0,0,0,0);const end=new Date(now);end.setDate(end.getDate()+7);
+    const upcoming=sortTasks(allTasks().filter(t=>t.workStatus!=='afgerond'&&t.due&&new Date(t.due)>=now&&new Date(t.due)<end));
+    root.innerHTML=`<p class="muted">Alleen data die op Windows bekend zijn. Controleer roosterwijzigingen en deadlines bij de school.</p>${taskPanel('Taken binnen 7 dagen',upcoming)}<h2 class="section">Toetsen en afspraken (${events.length})</h2>${events.map(e=>`<div class="panel"><div class="row"><div><strong>${esc(e.title)}</strong><p class="panel-detail">${esc(courseTitle(e.courseId))} · ${esc(e.kind||'Afspraak')}</p></div><span class="chip">${esc(due(e.date))}</span></div></div>`).join('')||'<p class="muted">Nog geen afspraken ontvangen.</p>'}`;
+  }else if(tab==='search'){
+    root.innerHTML=`<p class="muted">Zoek offline in de taken, vaknamen en toetsafspraken die op deze iPhone staan. Volledige studienotities zijn nog niet gesynchroniseerd.</p><form id="search-form" class="search-form"><input id="search-input" type="search" maxlength="100" placeholder="Zoek taak, vak of toets…" autocomplete="off" required><button class="action" type="submit">Zoeken</button></form><div id="search-results"></div>`;
   }else if(tab==='sync'){
     const changes=Object.values(state.changed);
-    root.innerHTML=`<div class="panel"><h2 class="panel-title">Verbind met je Windows-laptop</h2><p class="panel-detail">Start eerst START_WIFI_BRUG.cmd op Windows. Je telefoon en laptop moeten verbonden zijn met dezelfde eigen privéwifi.</p><form id="sync-form"><label class="field">Windows-adres (zoals getoond in het CMD-venster)<input id="endpoint" type="url" value="${esc(state.endpoint)}" placeholder="http://192.168.1.5:8765" autocapitalize="off" required></label><label class="field">Tijdelijke toegangscode (32 tekens)<input id="token" type="password" value="${esc(state.token)}" autocomplete="off" placeholder="Plak de getoonde code" required></label><button class="action" id="sync-btn" type="submit">↻ Nu synchroniseren</button></form><p class="subtle">${esc(state.syncMessage)}</p></div><div class="panel"><h2 class="panel-title">Mobiele wijzigingen</h2><p class="panel-detail">${changes.length} wijziging(en) opgeslagen op deze iPhone. Na versturen moet Windows de werkstatus nog bevestigen.</p>${changes.map(c=>`<div class="course"><span>${esc(state.tasks.find(t=>t.id===c.taskId)?.title||c.taskId)}</span><span class="status ${c.status==='conflict'?'failed':'pending'}">${esc(c.status)}</span></div>`).join('')}</div><div class="notice">Deze proef gebruikt lokale HTTP zonder versleuteling. Gebruik uitsluitend je eigen vertrouwde wifi; geen school-, café- of openbaar netwerk. De server deelt geen volledige notities, wachtwoorden of officiële cijfergegevens. Je mag de wifi-brug op Windows sluiten zodra je klaar bent.</div>`;
+    root.innerHTML=`<div class="panel"><h2 class="panel-title">Verbind met je Windows-laptop</h2><p class="panel-detail">Start eerst START_WIFI_BRUG.cmd op Windows. Je telefoon en laptop moeten verbonden zijn met dezelfde eigen privéwifi.</p><form id="sync-form"><label class="field">Windows-adres (zoals getoond in het CMD-venster)<input id="endpoint" type="url" value="${esc(state.endpoint)}" placeholder="http://192.168.1.5:8765" autocapitalize="off" required></label><label class="field">Tijdelijke sessiesleutel (32 tekens, niet bewaard)<input id="token" type="password" value="${esc(sessionSecret)}" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Sleutel uit Windows-venster" required></label><button class="action" id="sync-btn" type="submit">↻ Nu synchroniseren</button></form><p class="subtle">${esc(state.syncMessage)}</p></div><div class="panel"><h2 class="panel-title">Mobiele wijzigingen</h2><p class="panel-detail">${changes.length} wijziging(en) opgeslagen op deze iPhone. Na versturen moet Windows de werkstatus nog bevestigen.</p>${changes.map(c=>`<div class="course"><span>${esc(state.tasks.find(t=>t.id===c.taskId)?.title||c.taskId)}<br><small>${esc(c.status==='queued'?'Wacht op Windows':c.status==='conflict'?'Conflict: controleer op Windows':'Lokaal opgeslagen')}</small></span><button class="clear-change" data-discard="${esc(c.taskId)}" type="button">Verwijder voorstel</button></div>`).join('')}</div><div class="notice">v4.0 versleutelt de berichtinhoud met AES-GCM. Het lokale HTTP-adres en de hoeveelheid verkeer zijn nog zichtbaar. Gebruik uitsluitend je eigen privéwifi. De sessiesleutel wordt niet op de iPhone opgeslagen en vervalt wanneer de app volledig sluit.</div>`;
   }
   root.querySelectorAll('[data-task]').forEach(b=>b.addEventListener('click',()=>toggle(b.dataset.task)));
+  root.querySelectorAll('[data-course]').forEach(b=>b.addEventListener('click',()=>{state.courseFilter=b.dataset.course;state.tab='today';save();render();}));
+  root.querySelector('#clear-filter')?.addEventListener('click',()=>{state.courseFilter='';save();render();});
+  root.querySelector('#search-form')?.addEventListener('submit',e=>{e.preventDefault();runSearch(root.querySelector('#search-input').value.trim());});
+  root.querySelectorAll('[data-discard]').forEach(b=>b.addEventListener('click',()=>{
+    const id=b.dataset.discard;if(!confirm('Alleen de lokale wijziging verwijderen? Een al naar Windows verzonden voorstel blijft daar staan totdat je het op Windows afwijst.'))return;
+    delete state.changed[id];save();render();
+  }));
   root.querySelector('#quick-form')?.addEventListener('submit',e=>{e.preventDefault();const title=root.querySelector('#quick-title').value.trim();if(!title)return;const id='local-'+Date.now();state.localTasks.push({id,title,courseId:'',workStatus:'open',submission:'onbekend',due:'',updatedAt:new Date().toISOString()});save();render();});
-  root.querySelector('#sync-form')?.addEventListener('submit',e=>{e.preventDefault();state.endpoint=root.querySelector('#endpoint').value.trim().replace(/\/+$/,'');state.token=root.querySelector('#token').value.trim();save();void sync();});
+  root.querySelector('#sync-form')?.addEventListener('submit',e=>{e.preventDefault();state.endpoint=root.querySelector('#endpoint').value.trim().replace(/\/+$/,'');sessionSecret=root.querySelector('#token').value.trim().toLowerCase();save();void sync();});
 }
 function toggle(id){
   const local=state.localTasks.find(t=>t.id===id);
@@ -49,12 +67,36 @@ function toggle(id){
   state.changed[id]={id:crypto.randomUUID?crypto.randomUUID():Math.random().toString(36).slice(2)+'-'+Date.now(),taskId:id,newStatus,baseUpdatedAt:task.updatedAt,status:'offline'};
   save();render();
 }
-async function getJson(path,init={}){
-  const controller=new AbortController(); const t=setTimeout(()=>controller.abort(),9000);
+// v4.0 application-level AES-GCM: no clear-text tasks/keys in HTTP bodies.
+function b64(bytes){let result='';for(let i=0;i<bytes.length;i+=8192)result+=String.fromCharCode(...bytes.slice(i,i+8192));return btoa(result);}
+function from64(s){const raw=atob(s);return Uint8Array.from(raw,ch=>ch.charCodeAt(0));}
+function hexBytes(hex){return Uint8Array.from(hex.match(/../g)||[],v=>parseInt(v,16));}
+async function secureRequest(op,args={}){
+  if(!globalThis.crypto?.subtle)throw new Error('Deze iPhone ondersteunt hier geen beveiligde WebCrypto-verbinding.');
+  const key=await crypto.subtle.importKey('raw',hexBytes(sessionSecret),{name:'AES-GCM'},false,['encrypt','decrypt']);
+  const iv=crypto.getRandomValues(new Uint8Array(12));
+  const msg=new TextEncoder().encode(JSON.stringify({op,at:Date.now(),...args}));
+  const ciphertext=new Uint8Array(await crypto.subtle.encrypt({name:'AES-GCM',iv},key,msg));
+  const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),12000);
   try{
-    const res=await fetch(state.endpoint+path,{...init,headers:{'Authorization':`Bearer ${state.token}`,'Content-Type':'application/json'},signal:controller.signal,cache:'no-store'});
-    const data=await res.json().catch(()=>({}));if(!res.ok)throw new Error((data.error||'HTTP '+res.status));return data;
-  }finally{clearTimeout(t);}
+    const res=await fetch(state.endpoint+'/api/v4',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({iv:b64(iv),data:b64(ciphertext)}),signal:controller.signal,cache:'no-store'});
+    const packet=await res.json().catch(()=>({}));
+    if(!res.ok)throw new Error(packet.error||'HTTP '+res.status);
+    const plain=await crypto.subtle.decrypt({name:'AES-GCM',iv:from64(packet.iv)},key,from64(packet.data));
+    const data=JSON.parse(new TextDecoder().decode(plain));
+    if(!data.ok)throw new Error(data.error||'Windows weigert het verzoek');
+    return data;
+  }finally{clearTimeout(timer);}
+}
+function runSearch(term){
+  const root=document.getElementById('search-results');const needle=term.toLocaleLowerCase('nl-NL');
+  if(!needle){root.textContent='Vul eerst een zoekterm in.';return;}
+  const tasks=sortTasks(allTasks().filter(t=>(t.title+' '+courseTitle(t.courseId)).toLocaleLowerCase('nl-NL').includes(needle)));
+  const events=state.events.filter(e=>(e.title+' '+courseTitle(e.courseId)).toLocaleLowerCase('nl-NL').includes(needle));
+  const courses=state.courses.filter(c=>c.title.toLocaleLowerCase('nl-NL').includes(needle));
+  root.innerHTML=`${taskPanel('Taken',tasks)}<h2 class="section">Vakken (${courses.length})</h2>${courses.map(c=>`<button class="course course-link" data-course="${esc(c.id)}">${esc(c.title)} <span class="chip">Bekijk taken ›</span></button>`).join('')||'<p class="muted">Geen vakken gevonden.</p>'}<h2 class="section">Afspraken (${events.length})</h2>${events.map(e=>`<div class="panel">${esc(e.title)} · ${esc(due(e.date))}</div>`).join('')||'<p class="muted">Geen afspraken gevonden.</p>'}`;
+  root.querySelectorAll('[data-task]').forEach(b=>b.addEventListener('click',()=>toggle(b.dataset.task)));
+  root.querySelectorAll('[data-course]').forEach(b=>b.addEventListener('click',()=>{state.courseFilter=b.dataset.course;state.tab='today';save();render();}));
 }
 function isPrivateEndpoint(endpoint){
   try{const url=new URL(endpoint);const ip=url.hostname;
@@ -64,21 +106,32 @@ function isPrivateEndpoint(endpoint){
 }
 async function sync(){
   if(!isPrivateEndpoint(state.endpoint)){state.syncMessage='Gebruik het privé-IP-adres en poort 8765 die de Windows-brug toont.';save();render();return;}
-  if(!/^[a-f0-9]{32}$/.test(state.token)){state.syncMessage='Controleer de tijdelijke toegangscode van Windows (32 tekens).';save();render();return;}
-  state.syncMessage='Verbinden met Windows…';render();
+  if(!/^[a-f0-9]{32}$/.test(sessionSecret)){state.syncMessage='Controleer de tijdelijke sessiesleutel van Windows (32 hex tekens).';save();render();return;}
+  state.syncMessage='Beveiligd verbinden met Windows…';render();
   try{
-    // Send offline changes; keep queued changes locally until Windows has approved them.
+    // First fetch a valid snapshot, then send proposals; wrong keys cannot mutate data.
+    const initialSnapshot=await secureRequest('snapshot');
+    if(initialSnapshot.version!==4||!Array.isArray(initialSnapshot.tasks)||!Array.isArray(initialSnapshot.courses))throw new Error('De Windows-brug is niet v4.0');
+    let sendErrors=[];
     for(const c of Object.values(state.changed))if(c.status==='offline'){
-      try{const a=await getJson('/api/proposal',{method:'POST',body:JSON.stringify(c)});c.status=a.status==='applied'?'applied':'queued';}
-      catch(e){c.status=String(e).includes('gewijzigd')?'conflict':'offline';state.syncMessage='Een wijziging kon niet worden verstuurd: '+String(e);}
+      try{
+        const a=await secureRequest('proposal',{proposal:c});
+        c.status=a.status==='applied'?'applied':a.status==='pending'?'queued':'conflict';
+      }catch(e){if(String(e).includes('Conflict:'))c.status='conflict';else sendErrors.push(String(e));}
     }
-    const queued=Object.values(state.changed).filter(c=>c.status==='queued');
-    if(queued.length){const statuses=await getJson('/api/status?ids='+queued.map(c=>encodeURIComponent(c.id)).join(','));for(const s of statuses.requests||[]){const c=Object.values(state.changed).find(x=>x.id===s.id);if(c){if(s.status==='applied')delete state.changed[c.taskId];else if(s.status==='conflict'||s.status==='rejected')state.changed[c.taskId].status='conflict';}}}
-    const snapshot=await getJson('/api/snapshot');if(snapshot.version!==3||!Array.isArray(snapshot.tasks)||!Array.isArray(snapshot.courses))throw new Error('Ongeldige Windows-gegevens');
-    state.courses=snapshot.courses;state.tasks=snapshot.tasks;state.events=snapshot.events||[];state.synced=true;state.lastSync=new Date().toLocaleString('nl-NL');
+    const queued=Object.values(state.changed).filter(c=>c.status==='queued'||c.status==='applied');
+    if(queued.length){const statuses=await secureRequest('status',{ids:queued.map(c=>c.id)});
+      for(const response of statuses.requests||[]){
+        const c=Object.values(state.changed).find(x=>x.id===response.id);
+        if(c){if(response.status==='applied')delete state.changed[c.taskId];else if(['conflict','rejected'].includes(response.status))c.status='conflict';}
+      }
+    }
+    const snapshot=await secureRequest('snapshot');
+    state.courses=snapshot.courses;state.tasks=snapshot.tasks;state.events=snapshot.events||[];state.synced=true;
+    state.lastSync=new Date().toLocaleString('nl-NL');
     const outstanding=Object.values(state.changed).length;
-    state.syncMessage=`Gegevens opgehaald. ${outstanding?outstanding+' mobiele voorstel(len) moeten nog door Windows worden behandeld.':'Geen openstaande wijzigingen.'}`;
-  }catch(e){state.syncMessage='Verbinding niet gelukt: '+String(e)+'. Je lokale wijzigingen blijven opgeslagen.';}
+    state.syncMessage=`Beveiligde synchronisatie geslaagd. ${outstanding?outstanding+' voorstel(len) wachten nog op controle of hebben een conflict.':'Geen openstaande mobiele voorstellen.'}${sendErrors.length?' Let op: '+sendErrors.join('; '):''}`;
+  }catch(e){state.syncMessage='Beveiligde verbinding niet gelukt: '+String(e)+'. Je lokale wijzigingen blijven opgeslagen.';}
   save();render();
 }
 document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>{state.tab=b.dataset.tab;save();render();}));

@@ -27,3 +27,11 @@ button{cursor:pointer}button:disabled{opacity:.55;cursor:default}.task{gap:10px}
 .notice{border:1px solid #6c593e;background:#312719;color:#ffe3b5;padding:10px 12px;border-radius:12px;font-size:12px;line-height:1.6;overflow-wrap:anywhere}
 .btnrow{display:flex;gap:9px;flex-wrap:wrap}.btnrow .action{width:auto;flex:1;min-width:130px}
 .task.done .tick{color:#0b211a}.inputmsg{color:#ffcfba;font-size:12px;overflow-wrap:anywhere}
+
+/* v4.0: five bottom tabs, course filters and keyboard-safe search */
+.tab{min-width:0;padding-inline:1px}.tab .nav-icon{font-size:23px}.tabbar{gap:1px;padding-inline:5px}
+.course-link{cursor:pointer;width:100%;font-family:inherit;text-align:left;color:inherit}.course-link:focus-visible,.clear-change:focus-visible,.filter-line button:focus-visible{outline:2px solid #90bcff;outline-offset:2px}
+.filter-line{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:12px;color:#adcaef;font-size:12px}.filter-line button,.clear-change{background:#263f61;color:#d6e8ff;border:1px solid #45648e;border-radius:11px;padding:10px;font-size:12px;min-height:41px}
+.search-form{display:flex;gap:9px;align-items:stretch;margin:17px 0;min-width:0}.search-form input{flex:1;min-width:0;width:100%;border:1px solid #45648e;border-radius:12px;background:#11213a;color:white;padding:12px;font-size:16px}.search-form .action{width:auto;margin:0;min-width:85px;flex-shrink:0}
+.course>span:first-child{min-width:0;overflow-wrap:anywhere}.clear-change{flex-shrink:0}.tab{font-size:10px}
+@media(max-width:350px){.tabbar{padding-inline:3px}.tab{font-size:9px}.search-form{flex-wrap:wrap}.search-form .action{width:100%}}
