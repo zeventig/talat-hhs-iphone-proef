@@ -1,6 +1,6 @@
 {
   "name": "talat-hhs-iphone-proef",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Afzonderlijke, privacyveilige iPhone bouwproef voor Talat HHS",
   "private": true,
   "type": "module",

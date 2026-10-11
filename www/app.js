@@ -1,4 +1,4 @@
-// Talat HHS v1.1: alleen een publieke iPhone-bouwproef met voorbeeldtaken.
+// Talat HHS v1.1.1: alleen een publieke iPhone-bouwproef met voorbeeldtaken.
 // GEEN echte studiegegevens, GEEN ChatGPT-koppeling, GEEN Windows-sync.
 (() => {
   'use strict';
@@ -91,7 +91,7 @@
     });
     appendText(screen,'h2','section','Snel een VOORBEELD-taak toevoegen');
     const form = el('form','quickadd');
-    const input = el('input'); input.placeholder = 'Bijvoorbeeld: Begrippen oefenen'; input.maxLength=80; input.required=true; input.setAttribute('aria-label','Naam van een voorbeeldtaak');
+    const input = el('input'); input.type='text'; input.autocomplete='off'; input.placeholder = 'Bijvoorbeeld: Begrippen oefenen'; input.maxLength=80; input.required=true; input.setAttribute('aria-label','Naam van een voorbeeldtaak');
     const add = el('button','', '+'); add.type='submit'; add.setAttribute('aria-label','Voorbeeldtaak toevoegen');
     form.append(input,add);
     form.addEventListener('submit', e => {
@@ -119,7 +119,7 @@
   }
   function about() {
     title.textContent = 'Meer';
-    screen.append(panel('Talat HHS · iPhone-proef v1.1','Doel van deze versie: bewijzen dat de GRATIS IPA via GitHub Actions en Sideloadly gebouwd en geïnstalleerd kan worden.'));
+    screen.append(panel('Talat HHS · iPhone-proef v1.1.1','Doel van deze versie: bewijzen dat de GRATIS IPA via GitHub Actions en Sideloadly gebouwd en geïnstalleerd kan worden.'));
     screen.append(panel('Wat werkt in deze proef?','Voorbeeldtaken aanvinken, toevoegen, lokaal bewaren en vakken bekijken. Geen SQLite-import, geen verbinding met je Windows-versie.'));
     screen.append(panel('Belangrijk voor je echte planning','Voorbeeldtaken zijn geen officiële deadlines, resultaten of ingeleverde opdrachten.'));
     const reset = el('button','action secondary','Voorbeeldgegevens wissen');
