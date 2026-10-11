@@ -1,4 +1,4 @@
-name: Bouw iPhone proef-IPA (unsigned)
+name: Bouw Talat HHS iPhone v3.0 (unsigned)
 
 on:
   workflow_dispatch:
@@ -31,6 +31,18 @@ jobs:
           npx cap add ios
           npx cap sync ios
 
+      - name: Geef alleen lokale netwerktoegang toestemming
+        run: |
+          python3 - <<'PYTHON'
+          import plistlib
+          from pathlib import Path
+          p=Path('ios/App/App/Info.plist')
+          with p.open('rb') as f: data=plistlib.load(f)
+          data['NSLocalNetworkUsageDescription']='Talat HHS verbindt met je Windows-laptop op je eigen privewifi.'
+          data.setdefault('NSAppTransportSecurity',{})['NSAllowsLocalNetworking']=True
+          with p.open('wb') as f: plistlib.dump(data,f)
+          PYTHON
+
       - name: Controleer Xcode
         run: |
           xcodebuild -version
@@ -59,13 +71,13 @@ jobs:
           mkdir -p "$RUNNER_TEMP/iphone-payload/Payload"
           cp -R "$APP" "$RUNNER_TEMP/iphone-payload/Payload/App.app"
           cd "$RUNNER_TEMP/iphone-payload"
-          /usr/bin/zip -qr "$GITHUB_WORKSPACE/Talat-HHS-iPhone-Proef-UNSIGNED.ipa" Payload
-          test -s "$GITHUB_WORKSPACE/Talat-HHS-iPhone-Proef-UNSIGNED.ipa"
+          /usr/bin/zip -qr "$GITHUB_WORKSPACE/Talat-HHS-iPhone-v3-UNSIGNED.ipa" Payload
+          test -s "$GITHUB_WORKSPACE/Talat-HHS-iPhone-v3-UNSIGNED.ipa"
 
       - name: Bied IPA aan als download
         uses: actions/upload-artifact@v4
         with:
-          name: Talat-HHS-iPhone-Proef-IPA
-          path: Talat-HHS-iPhone-Proef-UNSIGNED.ipa
+          name: Talat-HHS-iPhone-v3-IPA
+          path: Talat-HHS-iPhone-v3-UNSIGNED.ipa
           if-no-files-found: error
           retention-days: 3

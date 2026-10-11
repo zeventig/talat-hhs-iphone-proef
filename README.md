@@ -1,20 +1,13 @@
-# Talat HHS — iPhone-proef v1.1.1
+# Talat HHS iPhone v3.0 — studiepilot
 
-Mobiele weergave-bugfix. De proefapp bevat alleen fictieve voorbeeldtaken. Geen echte studiegegevens of Windows-sync.
+**Publieke demo-broncode.** Er staan geen echte notities, studentgegevens, API-sleutels of tokens in.
 
-## Bijwerken van je bestaande installatie
-1. Pak de complete ZIP uit.
-2. Dubbelklik **UPDATE_GITHUB.cmd** uit de bovenste map.
-3. Geef de URL op van je **bestaande** openbare GitHub-repository `talat-hhs-iphone-proef`.
-4. Open GitHub → Actions → **Bouw iPhone proef-IPA (unsigned)** → **Run workflow**.
-5. Download het nieuwe artifact, pak uit en installeer de IPA via Sideloadly.
+Bouwen: dezelfde gratis GitHub Actions / Capacitor / Sideloadly-route als de bewezen v1.1-proef.
 
-De update verandert alleen openbare voorbeeldbroncode. De iPhone-gegevens kunnen bij het opnieuw installeren behouden blijven als iOS dit als update behandelt, maar dit is niet gegarandeerd. De Windows-app en 117 notities blijven onaangeroerd.
+- Vandaag: taken in één tik afvinken, lokaal bewaren. Vinkjes uit Windows worden na handmatige sync voorgelegd ter goedkeuring.
+- Vakken: TECH1/2, BUS1/2, CHAL1/2 uit Windows.
+- Planning: toetsafspraken vanuit Windows.
+- Sync: voer lokaal privé-IP + tijdelijke code van de Windows-wifibrug in en kies Synchroniseren.
+- Eigen sneltoegevoegde taken blijven voorlopig **alleen op de iPhone** en worden niet naar Windows gestuurd.
 
-## Test
-- Tik op `Snel een VOORBEELD-taak toevoegen` en open het toetsenbord. **Geen automatische zoom**.
-- Typ een lange titel, controleer dat horizontaal scrollen niet mogelijk is.
-- Voeg de taak toe en controleer opslag na heropenen.
-- Test zowel in portretstand als liggend, als je iPhone dat ondersteunt.
-
-De HTML viewport ondersteunt handmatig zoomen voor toegankelijkheid. De inputtekst is 16px; de CSS-grid en tekstomloop voorkomen horizontale overloop.
+De eerste wifi-sync is een proef. Geen volledige notities, geen automatische achtergrond-sync, geen online cloud. Gebruik de wifibrug uitsluitend op eigen vertrouwde wifi. Stuur tokens niet naar GitHub.
