@@ -1,7 +1,7 @@
 {
   "name": "talat-hhs-iphone-proef",
-  "version": "4.0.0",
-  "description": "Talat HHS iPhone v4.0: encrypted Wi-Fi messages, offline planning and search",
+  "version": "5.0.0",
+  "description": "Talat HHS iPhone v5.0: complete course catalogue, offline studycoach, secure sync, optional local AI",
   "private": true,
   "type": "module",
   "scripts": {

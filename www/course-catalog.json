@@ -1,0 +1,74 @@
+[
+  {
+    "id": "programming1",
+    "title": "Programming 1",
+    "block": "TECH1",
+    "status": "actief",
+    "description": "Java en programmeren.",
+    "source": "U"
+  },
+  {
+    "id": "networks",
+    "title": "Computer Networks",
+    "block": "TECH1",
+    "status": "actief",
+    "description": "Netwerken, protocollen, labs.",
+    "source": "U"
+  },
+  {
+    "id": "bpm",
+    "title": "Business Process Management",
+    "block": "BUS1",
+    "status": "actief",
+    "description": "BPMN en procesmodellering.",
+    "source": "U"
+  },
+  {
+    "id": "security1",
+    "title": "Security Essentials 1",
+    "block": "BUS1",
+    "status": "actief",
+    "description": "Informatiebeveiliging en risicoanalyse.",
+    "source": "U"
+  },
+  {
+    "id": "challenge",
+    "title": "The Challenge & Professional Development",
+    "block": "CHAL1",
+    "status": "actief",
+    "description": "FreshTrack, groepswerk en persoonlijke ontwikkeling.",
+    "source": "U"
+  },
+  {
+    "id": "programming2",
+    "title": "Programming 2",
+    "block": "ONBEKEND",
+    "status": "komend",
+    "description": "Vervolgvak. Indeling TECH2/BUS2 niet bevestigd.",
+    "source": "N"
+  },
+  {
+    "id": "embedded",
+    "title": "Embedded Systems",
+    "block": "ONBEKEND",
+    "status": "komend",
+    "description": "Vervolgvak. Indeling TECH2/BUS2 niet bevestigd.",
+    "source": "N"
+  },
+  {
+    "id": "databases",
+    "title": "Databases",
+    "block": "ONBEKEND",
+    "status": "komend",
+    "description": "Vervolgvak. Indeling TECH2/BUS2 niet bevestigd.",
+    "source": "N"
+  },
+  {
+    "id": "security2",
+    "title": "Security Essentials 2",
+    "block": "ONBEKEND",
+    "status": "komend",
+    "description": "Vervolgvak. Indeling TECH2/BUS2 niet bevestigd.",
+    "source": "N"
+  }
+]

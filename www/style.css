@@ -35,3 +35,17 @@ button{cursor:pointer}button:disabled{opacity:.55;cursor:default}.task{gap:10px}
 .search-form{display:flex;gap:9px;align-items:stretch;margin:17px 0;min-width:0}.search-form input{flex:1;min-width:0;width:100%;border:1px solid #45648e;border-radius:12px;background:#11213a;color:white;padding:12px;font-size:16px}.search-form .action{width:auto;margin:0;min-width:85px;flex-shrink:0}
 .course>span:first-child{min-width:0;overflow-wrap:anywhere}.clear-change{flex-shrink:0}.tab{font-size:10px}
 @media(max-width:350px){.tabbar{padding-inline:3px}.tab{font-size:9px}.search-form{flex-wrap:wrap}.search-form .action{width:100%}}
+
+/* v5.0: double-tap zoom voorkomen met behoud van normale pinch-to-zoom.
+   Geen user-scalable=no: toegankelijkheidszoom blijft beschikbaar. */
+html,body,.app-shell,#screen,.topbar,.tabbar,.hero,.panel,.course,.task,button,input,textarea{touch-action:manipulation}
+button,textarea,input{-webkit-tap-highlight-color:transparent}
+.avatar{border:1px solid #425a7e;cursor:pointer}
+.back-link{background:transparent;border:1px solid #486485;border-radius:12px;color:#d6e9ff;padding:11px;margin:12px 0;min-height:44px}
+.note-body{font-family:inherit;font-size:14px;line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;max-width:100%;overflow-x:auto;color:#deebff}
+#coach-prompt{display:block;width:100%;min-width:0;max-width:100%;font-size:16px;padding:12px;border-radius:12px;border:1px solid #56759a;background:#0e1b30;color:#e7f4ff;line-height:1.55;margin-top:12px;resize:vertical}
+.privacy-choice{display:flex;gap:10px;align-items:flex-start;color:#c0d6f7;font-size:13px;line-height:1.5;margin:18px 0}
+.privacy-choice input{flex-shrink:0;width:20px;height:20px;margin:1px 0 0}
+.action.secondary{background:#31445d}
+
+#ai-input{margin:14px 0 6px;display:block;width:100%;min-width:0;max-width:100%;border:1px solid #4d7096;border-radius:12px;padding:12px;background:#0d1d36;color:#e4f2ff;font-size:16px;line-height:1.5;resize:vertical}
